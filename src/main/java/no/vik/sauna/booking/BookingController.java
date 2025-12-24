@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 
@@ -15,6 +16,8 @@ import java.util.List;
 public class BookingController {
 
     private final BookingService service;
+
+    private static final ZoneId OSLO = ZoneId.of("Europe/Oslo");
 
     public BookingController(BookingService service) {
         this.service = service;
@@ -51,10 +54,9 @@ public class BookingController {
 
             service.createBooking(d, t, name, phone, peopleCount);
 
-            return "redirect:/booking?date=" + d; // tilbake til samme dato
+            return "redirect:/booking?date=" + d;
 
         } catch (ValidationException ve) {
-            // Vis feilmelding på siden
             LocalDate d = parseDateOrToday(date);
             model.addAttribute("date", d.toString());
             model.addAttribute("slots", service.getSlotsFor(d));
@@ -70,11 +72,11 @@ public class BookingController {
     }
 
     private LocalDate parseDateOrToday(String date) {
-        if (date == null || date.isBlank()) return LocalDate.now();
+        if (date == null || date.isBlank()) return LocalDate.now(OSLO);
         try {
             return LocalDate.parse(date);
         } catch (DateTimeParseException e) {
-            return LocalDate.now();
+            return LocalDate.now(OSLO);
         }
     }
 }
