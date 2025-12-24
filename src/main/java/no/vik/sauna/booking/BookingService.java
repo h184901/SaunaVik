@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,6 +15,9 @@ import java.util.List;
 public class BookingService {
 
     private final BookingRepository repo;
+
+    // Sett eksplisitt tidssone (robust i prod/railway)
+    private static final ZoneId OSLO = ZoneId.of("Europe/Oslo");
 
     // Åpningstider
     private static final LocalTime OPEN = LocalTime.of(7, 0);
@@ -29,6 +33,10 @@ public class BookingService {
         this.repo = repo;
     }
 
+    private LocalDate today() {
+        return LocalDate.now(OSLO);
+    }
+
     /**
      * Genererer alle starttider som er lov (hele timer) mellom 07:00 og 21:00.
      * (21:00 er siste start fordi booking varer 1 time og CLOSE er 22:00)
@@ -40,17 +48,16 @@ public class BookingService {
 
         while (!t.isAfter(lastStart)) {
             times.add(t);
-            t = t.plusHours(1); // hele timer
+            t = t.plusHours(1);
         }
         return times;
     }
 
     /**
      * Returnerer slots med kapasitet/bestilt/ledige for en dato.
-     * Krever repo-metode: sumPeopleCountByDateAndStartTime(date, startTime)
      */
     public List<TimeSlot> getSlotsFor(LocalDate date) {
-        if (date == null) date = LocalDate.now();
+        if (date == null) date = today();
 
         List<TimeSlot> slots = new ArrayList<>();
         for (LocalTime t : getAllowedStartTimes()) {
@@ -93,19 +100,18 @@ public class BookingService {
 
     private void validateBookingInput(LocalDate date, LocalTime startTime, String name, String phone, int peopleCount) {
         if (date == null) throw new ValidationException("Dato manglar.");
-        if (name == null || name.trim().length() < 2) throw new ValidationException("Navn må være minst 2 tegn.");
+        if (name == null || name.trim().length() < 2) throw new ValidationException("Navn må vera minst 2 tegn.");
         if (phone == null || !phone.matches("\\d{8}")) throw new ValidationException("Telefonnummer må vera 8 siffer.");
 
         if (peopleCount < 1 || peopleCount > CAPACITY) {
             throw new ValidationException("Antall må vera mellom 1 og " + CAPACITY + ".");
         }
 
-        // Ikke i fortid
-        if (date.isBefore(LocalDate.now())) {
+        // Ikke i fortid (bruk Oslo-tid)
+        if (date.isBefore(today())) {
             throw new ValidationException("Du kan ikkje booke dato i fortid.");
         }
 
-        // Må være en lovlig starttid (hele timer mellom OPEN og lastStart)
         List<LocalTime> allowed = getAllowedStartTimes();
         if (startTime == null || !allowed.contains(startTime)) {
             throw new ValidationException("Ugyldig tidspunkt. Velg ein heil time mellom 07:00 og 21:00.");
