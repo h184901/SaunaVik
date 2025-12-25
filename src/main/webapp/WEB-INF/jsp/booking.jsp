@@ -51,15 +51,24 @@
             <h2 style="margin:0 0 10px;">Tider for <span class="muted">${date}</span></h2>
 
             <c:forEach var="slot" items="${slots}">
-                <div class="slot">
+                <!-- Stengt = capacity == 0 (slik BookingService lager det) -->
+                <c:set var="closed" value="${slot.capacity == 0}" />
+
+                <div class="slot ${closed ? 'closed' :''}">
                     <div class="slot-left">
                         <div class="slot-time">${slot.startTime}</div>
+
                         <c:choose>
+                            <c:when test="${closed}">
+                                <span class="badge closed">Stengt</span>
+                            </c:when>
+
                             <c:when test="${slot.available}">
                                 <span class="badge ok">
                                     Ledig • ${slot.availableSpots} av ${slot.capacity} igjen
                                 </span>
                             </c:when>
+
                             <c:otherwise>
                                 <span class="badge no">Fullt</span>
                             </c:otherwise>
@@ -68,6 +77,12 @@
 
                     <div style="flex: 1;">
                         <c:choose>
+                            <c:when test="${closed}">
+                                <p class="muted" style="margin:0;">
+                                    Stengt
+                                </p>
+                            </c:when>
+
                             <c:when test="${slot.available}">
                                 <form method="post" action="/booking">
                                     <input type="hidden" name="date" value="${slot.date}">
@@ -103,9 +118,9 @@
 
                                         <button type="submit" class="btn btn-primary">Reserver</button>
                                     </div>
-
                                 </form>
                             </c:when>
+
                             <c:otherwise>
                                 <p class="muted" style="margin:0;">
                                     Fullt

@@ -16,8 +16,12 @@
             <div class="logo-dot"></div>
             <span>Sauna i Vik</span>
         </div>
-        <nav class="nav">
+
+        <nav class="nav nav-right">
             <a href="/booking" class="btn btn-primary">Book tid</a>
+
+            <!-- Diskret admin-knapp -->
+            <a href="/admin/login" class="icon-btn" title="Admin" aria-label="Admin">⚙︎</a>
         </nav>
     </div>
 </header>
@@ -39,7 +43,6 @@
                     <a class="btn btn-secondary" href="#info">Praktisk</a>
                 </div>
 
-                <!-- Liten, diskret “chip” i staden for stor boks -->
                 <div class="hero-note">
                     <span class="hero-note-dot"></span>
                     <span>Ta med handkle · Kom presis · Rydd etter deg</span>
@@ -82,10 +85,30 @@
 
 </main>
 
-<footer class="footer">
-    <div class="container footer-row">
+<footer class="footer footer-pro">
+    <div class="container footer-grid">
+        <div>
+            <div class="footer-title">Sauna i Vik</div>
+            <div class="muted">Badstova ved fjorden.</div>
+        </div>
+
+        <div>
+            <div class="footer-title">Kontakt</div>
+            <div class="muted">Telefon: <span class="muted">—</span></div>
+            <div class="muted">E-post: <span class="muted">—</span></div>
+        </div>
+
+        <div>
+            <div class="footer-title">Lenker</div>
+            <a class="footer-link" href="/booking">Booking</a>
+            <a class="footer-link" href="#info">Praktisk</a>
+            <a class="footer-link footer-link-admin" href="/admin/login">Admin</a>
+        </div>
+    </div>
+
+    <div class="container footer-bottom">
         <span class="muted">© Sauna i Vik</span>
-        <span class="muted">Erlend Moheim</span>
+        <span class="muted">Laga av Erlend Moheim</span>
     </div>
 </footer>
 

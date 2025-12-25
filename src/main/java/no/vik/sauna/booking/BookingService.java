@@ -1,5 +1,6 @@
 package no.vik.sauna.booking;
 
+import no.vik.sauna.admin.ClosureRepository;
 import no.vik.sauna.common.TimeSlot;
 import no.vik.sauna.common.ValidationException;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,7 @@ import java.util.List;
 public class BookingService {
 
     private final BookingRepository repo;
+    private final ClosureRepository closures;
 
     // Sett eksplisitt tidssone (robust i prod/railway)
     private static final ZoneId OSLO = ZoneId.of("Europe/Oslo");
@@ -29,18 +31,15 @@ public class BookingService {
     // Kapasitet per time-slot
     private static final int CAPACITY = 4;
 
-    public BookingService(BookingRepository repo) {
+    public BookingService(BookingRepository repo, ClosureRepository closures) {
         this.repo = repo;
+        this.closures = closures;
     }
 
     private LocalDate today() {
         return LocalDate.now(OSLO);
     }
 
-    /**
-     * Genererer alle starttider som er lov (hele timer) mellom 07:00 og 21:00.
-     * (21:00 er siste start fordi booking varer 1 time og CLOSE er 22:00)
-     */
     public List<LocalTime> getAllowedStartTimes() {
         List<LocalTime> times = new ArrayList<>();
         LocalTime t = OPEN;
@@ -53,14 +52,25 @@ public class BookingService {
         return times;
     }
 
-    /**
-     * Returnerer slots med kapasitet/bestilt/ledige for en dato.
-     */
     public List<TimeSlot> getSlotsFor(LocalDate date) {
         if (date == null) date = today();
 
+        // NYTT: sjekk om heile dagen er stengt
+        boolean wholeDayClosed = closures.existsByDateAndStartTimeIsNull(date);
+
         List<TimeSlot> slots = new ArrayList<>();
         for (LocalTime t : getAllowedStartTimes()) {
+
+            // NYTT: sjekk om denne timen er stengt (eller heile dagen)
+            boolean slotClosed = wholeDayClosed || closures.existsByDateAndStartTime(date, t);
+
+            if (slotClosed) {
+                // Vi "skjuler" kapasitet ved å sette 0/0, så slot blir utilgjengelig.
+                // (booking.jsp viser da typisk "Fullt" / "0 igjen")
+                slots.add(new TimeSlot(date, t, 0, 0));
+                continue;
+            }
+
             int booked = repo.sumPeopleCountByDateAndStartTime(date, t);
             slots.add(new TimeSlot(date, t, CAPACITY, booked));
         }
@@ -115,6 +125,11 @@ public class BookingService {
         List<LocalTime> allowed = getAllowedStartTimes();
         if (startTime == null || !allowed.contains(startTime)) {
             throw new ValidationException("Ugyldig tidspunkt. Velg ein heil time mellom 07:00 og 21:00.");
+        }
+
+
+        if (closures.existsByDateAndStartTimeIsNull(date) || closures.existsByDateAndStartTime(date, startTime)) {
+            throw new ValidationException("Denne tida er stengt.");
         }
     }
 }
