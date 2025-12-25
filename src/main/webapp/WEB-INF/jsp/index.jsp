@@ -77,7 +77,7 @@
             <div class="gallery">
                 <img src="/img/Innside.JPG" alt="Inne i sauna" class="gallery-img">
                 <img src="/img/UtsideFin.JPG" alt="Sauna ute" class="gallery-img">
-                <img src="/img/Vik.jpg" alt="Sauna ved fjorden" class="gallery-img">
+                <img src="/img/utside2.jpg" alt="Sauna ved fjorden" class="gallery-img">
             </div>
             <p class="muted">Trykk for fullskjerm.</p>
         </div>
