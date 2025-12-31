@@ -4,7 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Sauna i Vik</title>
+    <title>Sauna i Vik – Badstove ved fjorden | Booking</title>
+
+    <meta name="description"
+          content="Badstove ved fjorden i Vik. Book sauna enkelt på nett. Open kvar dag 07:00–22:00." />
     <link rel="stylesheet" href="/styles.css">
     <script defer src="/app.js"></script>
 </head>
