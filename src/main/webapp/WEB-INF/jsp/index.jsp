@@ -65,7 +65,7 @@
 
             <div class="card">
                 <h2>Booking</h2>
-                <p>Velg tid og tal plassar. Du får bekreftelse med ein gong.</p>
+                <p>Velg tid og antall plassar. Du får bekreftelse med ein gong.</p>
                 <a class="btn btn-primary" href="/booking">Gå til booking</a>
             </div>
         </div>
