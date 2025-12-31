@@ -14,6 +14,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 
@@ -26,6 +27,8 @@ public class AdminController {
     @Value("${admin.key}")
     private String adminKey;
 
+    private static final ZoneId OSLO = ZoneId.of("Europe/Oslo");
+
     public AdminController(BookingService service, ClosureRepository closureRepo) {
         this.service = service;
         this.closureRepo = closureRepo;
@@ -33,7 +36,6 @@ public class AdminController {
 
     private void requireKey(String key) {
         if (key == null || !key.equals(adminKey)) {
-            // 404 så den ikkje røper at admin finst
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
     }
@@ -43,13 +45,9 @@ public class AdminController {
         return "redirect:/admin?key=" + safeKey;
     }
 
-    /*
-       Login-side (utan fast URL)
-   */
-
     @GetMapping("/admin/login")
     public String loginPage() {
-        return "admin-login"; // /WEB-INF/jsp/admin-login.jsp
+        return "admin-login";
     }
 
     @PostMapping("/admin/login")
@@ -61,12 +59,12 @@ public class AdminController {
         return redirectAdminWithKey(key);
     }
 
-
     @GetMapping("/admin")
     public String admin(@RequestParam(required = false) String key, Model model) {
         requireKey(key);
 
         model.addAttribute("key", key);
+        model.addAttribute("today", LocalDate.now(OSLO).toString()); // <-- NYTT
 
         List<Booking> bookings = service.getAllBookings();
         model.addAttribute("bookings", bookings);
@@ -98,7 +96,7 @@ public class AdminController {
             return redirectAdminWithKey(key);
         }
 
-        // tom/blank = steng heile dagen
+        // Tomt klokkeslett = steng heile dagen
         if (time == null || time.isBlank()) {
             if (!closureRepo.existsByDateAndStartTimeIsNull(d)) {
                 closureRepo.save(new Closure(d, null));
@@ -106,11 +104,13 @@ public class AdminController {
             return redirectAdminWithKey(key);
         }
 
-        // ellers steng enkel time
+        // Vilkårleg tid -> snap til nærmaste gyldige starttid (90-min intervall)
         try {
-            LocalTime t = LocalTime.parse(time);
-            if (!closureRepo.existsByDateAndStartTime(d, t)) {
-                closureRepo.save(new Closure(d, t));
+            LocalTime input = LocalTime.parse(time);
+            LocalTime normalized = service.normalizeStartTime(input);
+
+            if (!closureRepo.existsByDateAndStartTime(d, normalized)) {
+                closureRepo.save(new Closure(d, normalized));
             }
         } catch (DateTimeParseException ignored) { }
 

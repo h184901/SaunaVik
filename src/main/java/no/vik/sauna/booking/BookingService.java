@@ -18,17 +18,15 @@ public class BookingService {
     private final BookingRepository repo;
     private final ClosureRepository closures;
 
-    // Sett eksplisitt tidssone (robust i prod/railway)
     private static final ZoneId OSLO = ZoneId.of("Europe/Oslo");
 
     // Åpningstider
     private static final LocalTime OPEN = LocalTime.of(7, 0);
     private static final LocalTime CLOSE = LocalTime.of(22, 0);
 
-    // Varighet per booking (1 time)
-    private static final int DURATION_MINUTES = 60;
+    // 90 min per økt
+    private static final int DURATION_MINUTES = 90;
 
-    // Kapasitet per time-slot
     private static final int CAPACITY = 4;
 
     public BookingService(BookingRepository repo, ClosureRepository closures) {
@@ -47,33 +45,54 @@ public class BookingService {
 
         while (!t.isAfter(lastStart)) {
             times.add(t);
-            t = t.plusHours(1);
+            t = t.plusMinutes(DURATION_MINUTES);
         }
         return times;
+    }
+
+    /**
+     * Snapper vilkårleg klokkeslett (08:23) ned til nærmaste gyldige starttid.
+     * (Største starttid <= input)
+     */
+    public LocalTime normalizeStartTime(LocalTime input) {
+        if (input == null) return null;
+
+        List<LocalTime> allowed = getAllowedStartTimes();
+        if (allowed.isEmpty()) return input;
+
+        LocalTime first = allowed.get(0);
+        LocalTime last = allowed.get(allowed.size() - 1);
+
+        if (input.isBefore(first)) return first;
+        if (input.isAfter(last)) return last;
+
+        LocalTime candidate = first;
+        for (LocalTime t : allowed) {
+            if (!t.isAfter(input)) candidate = t;
+            else break;
+        }
+        return candidate;
     }
 
     public List<TimeSlot> getSlotsFor(LocalDate date) {
         if (date == null) date = today();
 
-        // NYTT: sjekk om heile dagen er stengt
         boolean wholeDayClosed = closures.existsByDateAndStartTimeIsNull(date);
 
         List<TimeSlot> slots = new ArrayList<>();
         for (LocalTime t : getAllowedStartTimes()) {
 
-            // NYTT: sjekk om denne timen er stengt (eller heile dagen)
             boolean slotClosed = wholeDayClosed || closures.existsByDateAndStartTime(date, t);
 
             if (slotClosed) {
-                // Vi "skjuler" kapasitet ved å sette 0/0, så slot blir utilgjengelig.
-                // (booking.jsp viser da typisk "Fullt" / "0 igjen")
-                slots.add(new TimeSlot(date, t, 0, 0));
+                slots.add(new TimeSlot(date, t, DURATION_MINUTES, 0, 0));
                 continue;
             }
 
             int booked = repo.sumPeopleCountByDateAndStartTime(date, t);
-            slots.add(new TimeSlot(date, t, CAPACITY, booked));
+            slots.add(new TimeSlot(date, t, DURATION_MINUTES, CAPACITY, booked));
         }
+
         return slots;
     }
 
@@ -84,12 +103,8 @@ public class BookingService {
         int booked = repo.sumPeopleCountByDateAndStartTime(date, startTime);
         int available = CAPACITY - booked;
 
-        if (available <= 0) {
-            throw new ValidationException("Denne timen er fullbooket.");
-        }
-        if (peopleCount > available) {
-            throw new ValidationException("Det er kun " + available + " plass(ar) igjen på denne timen.");
-        }
+        if (available <= 0) throw new ValidationException("Denne økta er fullbooka.");
+        if (peopleCount > available) throw new ValidationException("Det er berre " + available + " plass(ar) igjen på denne økta.");
 
         Booking booking = new Booking(date, startTime, name.trim(), phone.trim(), peopleCount);
         return repo.save(booking);
@@ -110,23 +125,21 @@ public class BookingService {
 
     private void validateBookingInput(LocalDate date, LocalTime startTime, String name, String phone, int peopleCount) {
         if (date == null) throw new ValidationException("Dato manglar.");
-        if (name == null || name.trim().length() < 2) throw new ValidationException("Navn må vera minst 2 tegn.");
+        if (name == null || name.trim().length() < 2) throw new ValidationException("Navn må vera minst 2 teikn.");
         if (phone == null || !phone.matches("\\d{8}")) throw new ValidationException("Telefonnummer må vera 8 siffer.");
 
         if (peopleCount < 1 || peopleCount > CAPACITY) {
             throw new ValidationException("Antall må vera mellom 1 og " + CAPACITY + ".");
         }
 
-        // Ikke i fortid (bruk Oslo-tid)
         if (date.isBefore(today())) {
             throw new ValidationException("Du kan ikkje booke dato i fortid.");
         }
 
         List<LocalTime> allowed = getAllowedStartTimes();
         if (startTime == null || !allowed.contains(startTime)) {
-            throw new ValidationException("Ugyldig tidspunkt. Velg ein heil time mellom 07:00 og 21:00.");
+            throw new ValidationException("Ugyldig tidspunkt.");
         }
-
 
         if (closures.existsByDateAndStartTimeIsNull(date) || closures.existsByDateAndStartTime(date, startTime)) {
             throw new ValidationException("Denne tida er stengt.");

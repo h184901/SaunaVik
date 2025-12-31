@@ -29,7 +29,7 @@
         <div class="card">
             <h1 style="margin-top:0;">Book tid</h1>
             <p class="muted" style="margin-top:6px;">
-                Velg dato og reserver ei ledig tidsluke (1 time om gangen).
+                Velg dato og reserver ei ledig økt (90 min).
             </p>
 
             <form method="get" action="/booking" class="form-row" style="margin-top:14px;">
@@ -51,12 +51,13 @@
             <h2 style="margin:0 0 10px;">Tider for <span class="muted">${date}</span></h2>
 
             <c:forEach var="slot" items="${slots}">
-                <!-- Stengt = capacity == 0 (slik BookingService lager det) -->
                 <c:set var="closed" value="${slot.capacity == 0}" />
 
                 <div class="slot ${closed ? 'closed' :''}">
                     <div class="slot-left">
-                        <div class="slot-time">${slot.startTime}</div>
+                        <div class="slot-time">
+                                ${slot.startTime}–${slot.endTime}
+                        </div>
 
                         <c:choose>
                             <c:when test="${closed}">
@@ -78,9 +79,7 @@
                     <div style="flex: 1;">
                         <c:choose>
                             <c:when test="${closed}">
-                                <p class="muted" style="margin:0;">
-                                    Stengt
-                                </p>
+                                <p class="muted" style="margin:0;">Stengt</p>
                             </c:when>
 
                             <c:when test="${slot.available}">
@@ -122,9 +121,7 @@
                             </c:when>
 
                             <c:otherwise>
-                                <p class="muted" style="margin:0;">
-                                    Fullt
-                                </p>
+                                <p class="muted" style="margin:0;">Fullt</p>
                             </c:otherwise>
                         </c:choose>
                     </div>
@@ -136,7 +133,7 @@
                 <ul class="list">
                     <li>Kom presis</li>
                     <li>Ta med handkle og drikke.</li>
-                    <li>Hald deg til tida du har booka.</li>
+                    <li>Hald deg til tida du har booka (90 min).</li>
                     <li>La det sjå fint ut etterpå.</li>
                 </ul>
             </div>

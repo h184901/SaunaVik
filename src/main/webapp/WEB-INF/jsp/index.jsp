@@ -33,9 +33,9 @@
         <div class="container hero-inner hero-inner--clean">
             <div class="hero-content">
                 <p class="hero-kicker">Badstova ved fjorden</p>
-                <h1 class="hero-title">Ekta utsikt. Enkelt å booke.</h1>
+                <h1 class="hero-title">God varme. Enkelt å booke.</h1>
                 <p class="hero-sub">
-                    Open kvar dag 07:00–22:00 · Velg tid og tal plassar.
+                    Open kvar dag 07:00–22:00 · Velg tid og antall plassar.
                 </p>
 
                 <div class="hero-actions hero-actions--clean">

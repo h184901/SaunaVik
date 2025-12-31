@@ -30,11 +30,10 @@
             <p class="muted" style="margin:6px 0 0;">Oversikt over alle bookinger + stenging av tider.</p>
         </div>
 
-        <!-- NYTT: steng tider -->
         <div class="card" style="margin-top:16px;">
             <h2 style="margin-top:0;">Steng tid</h2>
             <p class="muted" style="margin:6px 0 12px;">
-                Velg dato og eventuelt klokkeslett. Tomt klokkeslett = steng heile dagen.
+                Velg dato og eventuelt starttid. Tomt klokkeslett = steng heile dagen.
             </p>
 
             <form method="post" action="/admin/close" style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
@@ -42,19 +41,18 @@
 
                 <div>
                     <label class="muted" style="display:block; font-size:12px; margin-bottom:6px;">Dato</label>
-                    <input class="input" type="date" name="date" required>
+                    <input class="input" type="date" name="date" required value="${today}">
                 </div>
 
                 <div>
                     <label class="muted" style="display:block; font-size:12px; margin-bottom:6px;">Klokkeslett (valfritt)</label>
-                    <input class="input" type="time" name="time" step="3600" placeholder="07:00">
+                    <input class="input" type="time" name="time" placeholder="08:23">
                 </div>
 
                 <button type="submit" class="btn btn-danger">Steng</button>
             </form>
         </div>
 
-        <!-- NYTT: liste over stengingar -->
         <div class="card" style="margin-top:16px;">
             <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px;">
                 <div><b>Stengte tider</b>
@@ -106,7 +104,6 @@
             </c:choose>
         </div>
 
-        <!-- Bookinger -->
         <c:choose>
             <c:when test="${empty bookings}">
                 <div class="card" style="margin-top:16px;">
