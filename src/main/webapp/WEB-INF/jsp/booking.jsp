@@ -32,16 +32,26 @@
                 Velg dato og reserver ei ledig økt (90 min).
             </p>
 
-            <form id="dateForm" method="get" action="/booking" class="form-row" style="margin-top:14px; align-items:end;">
-                <label>
+            <!-- NY: Dato + pilar, auto-submit (ingen "Vis tider"-knapp) -->
+            <form id="dateForm" method="get" action="/booking" class="form-row" style="margin-top:14px;">
+                <label style="width:100%;">
                     Dato
-                    <input id="dateInput" type="date" name="date" value="${date}">
+                    <div style="display:flex; gap:10px; align-items:center; margin-top:6px; flex-wrap:wrap;">
+                        <button id="prevDayBtn" type="button" class="btn btn-secondary">←</button>
+
+                        <input id="dateInput"
+                               type="date"
+                               name="date"
+                               value="${date}"
+                               min="${today}"
+                               required
+                               style="flex:1; min-width: 220px;">
+
+                        <button id="nextDayBtn" type="button" class="btn btn-secondary">→</button>
+                    </div>
+
+                   
                 </label>
-
-                <button type="button" id="prevDayBtn" class="btn btn-secondary">← Forrige</button>
-                <button type="button" id="nextDayBtn" class="btn btn-secondary">Neste →</button>
-
-                <button type="submit" class="btn btn-ghost" style="display:none;">Vis tider</button>
             </form>
 
             <c:if test="${not empty error}">

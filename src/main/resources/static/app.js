@@ -14,6 +14,30 @@ function clamp(value, min, max) {
     return value;
 }
 
+/* ISO date helpers (unngå timezone-krøll) */
+function parseISODate(iso) {
+    // iso: "yyyy-MM-dd"
+    const [y, m, d] = iso.split("-").map(Number);
+    return new Date(y, m - 1, d); // lokal midnatt
+}
+
+function formatISODate(dt) {
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
+}
+
+function addDaysISO(iso, delta) {
+    const dt = parseISODate(iso);
+    dt.setDate(dt.getDate() + delta);
+    return formatISODate(dt);
+}
+
+function clampToMinISO(inputEl, iso) {
+    const min = inputEl.min; // "yyyy-MM-dd" eller tom
+    if (!min) return iso;
+    return (iso < min) ? min : iso;
+}
+
 /* =========================
    Booking: peopleCount (mobilvennlig)
    - Tillat fri typing
@@ -28,29 +52,24 @@ function getMinMax(input) {
 function clampPeopleCountOnBlurOrSubmit(input) {
     const { min, max } = getMinMax(input);
 
-    // Tillat tomt felt mens man redigerer, men på blur/submit må det bli gyldig
     const v = toIntOrNull(input.value);
     const fixed = v === null ? min : clamp(v, min, max);
 
     input.value = String(fixed);
 }
 
-// INPUT: ikke clamp aggressivt (så du kan skrive "3" uten at den blir til max)
+// INPUT: ikkje clamp aggressivt
 document.addEventListener("input", (e) => {
     const el = e.target;
 
-    // phone: bare siffer, maks 8 (mens du skriver er det ok)
+    // phone: bare siffer, maks 8
     if (el instanceof HTMLInputElement && el.name === "phone") {
         const digits = el.value.replace(/\D/g, "").slice(0, 8);
         if (digits !== el.value) el.value = digits;
     }
-
-    // peopleCount: la brukeren skrive, men hvis de skriver noe helt vilt (f.eks. 999)
-    // kan vi eventuelt *mykt* begrense ved å stoppe på max-lengde.
-    // (vi gjør ingen clamp her)
 });
 
-// BLUR: clamp når du går ut av feltet
+// BLUR: clamp når du går ut
 document.addEventListener(
     "blur",
     (e) => {
@@ -67,7 +86,7 @@ document.addEventListener(
     true
 );
 
-// SUBMIT: clamp før browser-validering og før request går til server
+// SUBMIT: clamp før request
 document.addEventListener("submit", (e) => {
     const form = e.target;
     if (!(form instanceof HTMLFormElement)) return;
@@ -120,40 +139,53 @@ document.addEventListener("submit", (e) => {
         }
     });
 })();
+
+/* =========================
+   Date navigation
+   - Booking: auto-submit
+   - Admin (steng tid): ikkje auto-submit
+========================= */
 document.addEventListener("DOMContentLoaded", () => {
-    const form = document.getElementById("dateForm");
-    const dateInput = document.getElementById("dateInput");
-    const prevBtn = document.getElementById("prevDayBtn");
-    const nextBtn = document.getElementById("nextDayBtn");
+    // BOOKING
+    const bookingForm = document.getElementById("dateForm");
+    const bookingDateInput = document.getElementById("dateInput");
+    const bookingPrevBtn = document.getElementById("prevDayBtn");
+    const bookingNextBtn = document.getElementById("nextDayBtn");
 
-    if (!form || !dateInput) return;
+    if (bookingForm && bookingDateInput) {
+        // Auto-submit når dato velges manuelt
+        bookingDateInput.addEventListener("change", () => {
+            if (bookingDateInput.value) bookingForm.submit();
+        });
 
-    const pad = (n) => String(n).padStart(2, "0");
+        const shiftBooking = (delta) => {
+            if (!bookingDateInput.value) return;
 
-    const now = new Date();
-    const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-    dateInput.min = todayStr;
+            let newVal = addDaysISO(bookingDateInput.value, delta);
+            newVal = clampToMinISO(bookingDateInput, newVal);
 
-    // Auto-submit når dato velges
-    dateInput.addEventListener("change", () => {
-        if (dateInput.value) form.submit();
-    });
+            bookingDateInput.value = newVal;
+            bookingForm.submit();
+        };
 
-    const shiftDays = (delta) => {
-        if (!dateInput.value) return;
+        if (bookingPrevBtn) bookingPrevBtn.addEventListener("click", () => shiftBooking(-1));
+        if (bookingNextBtn) bookingNextBtn.addEventListener("click", () => shiftBooking(1));
+    }
 
-        const d = new Date(dateInput.value + "T00:00:00");
-        d.setDate(d.getDate() + delta);
+    // ADMIN (steng tid) — berre endre dato, ikkje submit
+    const adminDateInput = document.getElementById("adminDateInput");
+    const adminPrevBtn = document.getElementById("adminPrevDayBtn");
+    const adminNextBtn = document.getElementById("adminNextDayBtn");
 
-        const newStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    if (adminDateInput) {
+        const shiftAdmin = (delta) => {
+            if (!adminDateInput.value) return;
 
+            const newVal = addDaysISO(adminDateInput.value, delta);
+            adminDateInput.value = newVal;
+        };
 
-        if (newStr < todayStr) return;
-
-        dateInput.value = newStr;
-        form.submit();
-    };
-
-    if (prevBtn) prevBtn.addEventListener("click", () => shiftDays(-1));
-    if (nextBtn) nextBtn.addEventListener("click", () => shiftDays(1));
+        if (adminPrevBtn) adminPrevBtn.addEventListener("click", () => shiftAdmin(-1));
+        if (adminNextBtn) adminNextBtn.addEventListener("click", () => shiftAdmin(1));
+    }
 });

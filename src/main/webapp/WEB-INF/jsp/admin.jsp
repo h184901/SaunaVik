@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Admin</title>
     <link rel="stylesheet" href="/styles.css">
+    <script defer src="/app.js"></script>
 </head>
 <body>
 
@@ -27,24 +28,7 @@
 
         <div class="card">
             <h1 style="margin-top:0;">Admin</h1>
-            <p class="muted" style="margin:6px 0 0;">Oversikt over bookinger + stenging av tider.</p>
-        </div>
-
-        <!-- Filter: vis bookinger for ein dag -->
-        <div class="card" style="margin-top:16px;">
-            <h2 style="margin-top:0;">Vis bookinger</h2>
-            <p class="muted" style="margin:6px 0 12px;">
-                Vel dato for å sjå kven som har booka.
-            </p>
-
-            <form method="get" action="/admin" style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
-                <input type="hidden" name="key" value="${key}">
-                <div>
-                    <label class="muted" style="display:block; font-size:12px; margin-bottom:6px;">Dato</label>
-                    <input class="input" type="date" name="date" required value="${date}">
-                </div>
-                <button type="submit" class="btn btn-secondary">Vis</button>
-            </form>
+            <p class="muted" style="margin:6px 0 0;">Oversikt over alle bookinger + stenging av tider.</p>
         </div>
 
         <!-- Steng tider -->
@@ -59,7 +43,21 @@
 
                 <div>
                     <label class="muted" style="display:block; font-size:12px; margin-bottom:6px;">Dato</label>
-                    <input class="input" type="date" name="date" required value="${today}">
+
+                    <!-- NY: pilar for dato (ikkje auto-submit, du trykker Steng sjølv) -->
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <button id="adminPrevDayBtn" type="button" class="btn btn-secondary">←</button>
+
+                        <input id="adminDateInput"
+                               class="input"
+                               type="date"
+                               name="date"
+                               required
+                               value="${today}"
+                               style="min-width: 180px;">
+
+                        <button id="adminNextDayBtn" type="button" class="btn btn-secondary">→</button>
+                    </div>
                 </div>
 
                 <div>
@@ -71,7 +69,7 @@
             </form>
         </div>
 
-        <!-- Stengingar -->
+        <!-- Liste over stengingar -->
         <div class="card" style="margin-top:16px;">
             <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px;">
                 <div><b>Stengte tider</b>
@@ -123,24 +121,25 @@
             </c:choose>
         </div>
 
-        <!-- Bookinger (for vald dato) -->
+        <!-- Bookinger -->
         <c:choose>
             <c:when test="${empty bookings}">
                 <div class="card" style="margin-top:16px;">
-                    Ingen bookinger for <b>${date}</b>.
+                    Ingen bookinger enda.
                 </div>
             </c:when>
 
             <c:otherwise>
                 <div class="card" style="margin-top:16px;">
                     <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px;">
-                        <div><b>Bookinger</b> <span class="muted">• ${bookings.size()} stk • ${date}</span></div>
+                        <div><b>Bookinger</b> <span class="muted">• ${bookings.size()} stk</span></div>
                     </div>
 
                     <div class="admin-table-wrap">
                         <table class="admin-table">
                             <thead>
                             <tr>
+                                <th>Dato</th>
                                 <th>Tid</th>
                                 <th>Namn</th>
                                 <th>Tlf</th>
@@ -152,6 +151,7 @@
                             <tbody>
                             <c:forEach var="b" items="${bookings}">
                                 <tr>
+                                    <td>${b.date}</td>
                                     <td><b>${b.startTime}</b></td>
                                     <td>${b.name}</td>
                                     <td>${b.phone}</td>
@@ -160,7 +160,6 @@
                                         <form method="post" action="/admin/delete" style="margin:0;">
                                             <input type="hidden" name="id" value="${b.id}">
                                             <input type="hidden" name="key" value="${key}">
-                                            <input type="hidden" name="date" value="${date}">
                                             <button type="submit" class="btn btn-danger">Slett</button>
                                         </form>
                                     </td>

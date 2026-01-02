@@ -16,7 +16,6 @@ import java.util.List;
 public class BookingController {
 
     private final BookingService service;
-
     private static final ZoneId OSLO = ZoneId.of("Europe/Oslo");
 
     public BookingController(BookingService service) {
@@ -31,9 +30,10 @@ public class BookingController {
     @GetMapping("/booking")
     public String booking(@RequestParam(required = false) String date, Model model) {
         LocalDate d = parseDateOrToday(date);
-        List<TimeSlot> slots = service.getSlotsFor(d);
 
+        model.addAttribute("today", LocalDate.now(OSLO).toString());
         model.addAttribute("date", d.toString());
+        List<TimeSlot> slots = service.getSlotsFor(d);
         model.addAttribute("slots", slots);
 
         return "booking";
@@ -53,17 +53,18 @@ public class BookingController {
             LocalTime t = LocalTime.parse(time);
 
             service.createBooking(d, t, name, phone, peopleCount);
-
             return "redirect:/booking?date=" + d;
 
         } catch (ValidationException ve) {
             LocalDate d = parseDateOrToday(date);
+            model.addAttribute("today", LocalDate.now(OSLO).toString());
             model.addAttribute("date", d.toString());
             model.addAttribute("slots", service.getSlotsFor(d));
             model.addAttribute("error", ve.getMessage());
             return "booking";
         } catch (Exception e) {
             LocalDate d = parseDateOrToday(date);
+            model.addAttribute("today", LocalDate.now(OSLO).toString());
             model.addAttribute("date", d.toString());
             model.addAttribute("slots", service.getSlotsFor(d));
             model.addAttribute("error", "Noe gikk galt. Prøv igjen.");
@@ -74,7 +75,7 @@ public class BookingController {
     private LocalDate parseDateOrToday(String date) {
         if (date == null || date.isBlank()) return LocalDate.now(OSLO);
         try {
-            return LocalDate.parse(date);
+            return LocalDate.parse(date); // må vere yyyy-MM-dd
         } catch (DateTimeParseException e) {
             return LocalDate.now(OSLO);
         }
