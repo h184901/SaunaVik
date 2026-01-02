@@ -18,5 +18,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     int sumPeopleCountByDateAndStartTime(@Param("date") LocalDate date,
                                          @Param("startTime") LocalTime startTime);
 
+    // Brukt i admin-filter (ein dag om gongen)
+    List<Booking> findAllByDateOrderByStartTimeAsc(LocalDate date);
     List<Booking> findAllByOrderByDateAscStartTimeAsc();
 }

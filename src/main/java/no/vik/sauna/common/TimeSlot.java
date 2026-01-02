@@ -29,11 +29,6 @@ public class TimeSlot {
         return startTime.plusMinutes(durationMinutes);
     }
 
-    public String getTimeRange() {
-
-        return startTime + "–" + getEndTime();
-    }
-
     public int getCapacity() { return capacity; }
     public int getBooked() { return booked; }
     public int getAvailableSpots() { return availableSpots; }

@@ -38,6 +38,14 @@ public class BookingService {
         return LocalDate.now(OSLO);
     }
 
+    public int getCapacity() {
+        return CAPACITY;
+    }
+
+    public int getDurationMinutes() {
+        return DURATION_MINUTES;
+    }
+
     public List<LocalTime> getAllowedStartTimes() {
         List<LocalTime> times = new ArrayList<>();
         LocalTime t = OPEN;
@@ -74,15 +82,30 @@ public class BookingService {
         return candidate;
     }
 
+    // NYTT: admin skal kunne henta bookinger for ein bestemt dato
+    public List<Booking> getBookingsForDate(LocalDate date) {
+        if (date == null) date = today();
+        return repo.findAllByDateOrderByStartTimeAsc(date);
+    }
+
     public List<TimeSlot> getSlotsFor(LocalDate date) {
         if (date == null) date = today();
 
         boolean wholeDayClosed = closures.existsByDateAndStartTimeIsNull(date);
 
+        LocalDate today = today();
+        LocalTime now = LocalTime.now(OSLO);
+
         List<TimeSlot> slots = new ArrayList<>();
         for (LocalTime t : getAllowedStartTimes()) {
 
-            boolean slotClosed = wholeDayClosed || closures.existsByDateAndStartTime(date, t);
+            // Steng tider som har passert i dag
+            boolean pastTimeToday = date.equals(today) && t.isBefore(now);
+
+            boolean slotClosed =
+                    pastTimeToday ||
+                            wholeDayClosed ||
+                            closures.existsByDateAndStartTime(date, t);
 
             if (slotClosed) {
                 slots.add(new TimeSlot(date, t, DURATION_MINUTES, 0, 0));
@@ -92,7 +115,6 @@ public class BookingService {
             int booked = repo.sumPeopleCountByDateAndStartTime(date, t);
             slots.add(new TimeSlot(date, t, DURATION_MINUTES, CAPACITY, booked));
         }
-
         return slots;
     }
 
@@ -110,35 +132,37 @@ public class BookingService {
         return repo.save(booking);
     }
 
-    public List<Booking> getAllBookings() {
-        return repo.findAllByOrderByDateAscStartTimeAsc();
-    }
-
     public void deleteBooking(Long id) {
         if (id == null) return;
         repo.deleteById(id);
     }
 
-    public int getCapacity() {
-        return CAPACITY;
-    }
-
     private void validateBookingInput(LocalDate date, LocalTime startTime, String name, String phone, int peopleCount) {
         if (date == null) throw new ValidationException("Dato manglar.");
-        if (name == null || name.trim().length() < 2) throw new ValidationException("Navn må vera minst 2 teikn.");
+        if (name == null || name.trim().length() < 2) throw new ValidationException("Navn må vera minst 2 tegn.");
         if (phone == null || !phone.matches("\\d{8}")) throw new ValidationException("Telefonnummer må vera 8 siffer.");
 
         if (peopleCount < 1 || peopleCount > CAPACITY) {
             throw new ValidationException("Antall må vera mellom 1 og " + CAPACITY + ".");
         }
 
-        if (date.isBefore(today())) {
+        LocalDate today = today();
+
+        if (date.isBefore(today)) {
             throw new ValidationException("Du kan ikkje booke dato i fortid.");
         }
 
         List<LocalTime> allowed = getAllowedStartTimes();
         if (startTime == null || !allowed.contains(startTime)) {
-            throw new ValidationException("Ugyldig tidspunkt.");
+            throw new ValidationException("Ugyldig tidspunkt. Velg ein tid innanfor opningstid.");
+        }
+
+        // Ikkje mulig å booke i fortid same dag
+        if (date.equals(today)) {
+            LocalTime now = LocalTime.now(OSLO);
+            if (startTime.isBefore(now)) {
+                throw new ValidationException("Du kan ikkje booke ei tid som allereie har passert i dag.");
+            }
         }
 
         if (closures.existsByDateAndStartTimeIsNull(date) || closures.existsByDateAndStartTime(date, startTime)) {

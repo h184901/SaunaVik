@@ -120,3 +120,40 @@ document.addEventListener("submit", (e) => {
         }
     });
 })();
+document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("dateForm");
+    const dateInput = document.getElementById("dateInput");
+    const prevBtn = document.getElementById("prevDayBtn");
+    const nextBtn = document.getElementById("nextDayBtn");
+
+    if (!form || !dateInput) return;
+
+    const pad = (n) => String(n).padStart(2, "0");
+
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    dateInput.min = todayStr;
+
+    // Auto-submit når dato velges
+    dateInput.addEventListener("change", () => {
+        if (dateInput.value) form.submit();
+    });
+
+    const shiftDays = (delta) => {
+        if (!dateInput.value) return;
+
+        const d = new Date(dateInput.value + "T00:00:00");
+        d.setDate(d.getDate() + delta);
+
+        const newStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+
+        if (newStr < todayStr) return;
+
+        dateInput.value = newStr;
+        form.submit();
+    };
+
+    if (prevBtn) prevBtn.addEventListener("click", () => shiftDays(-1));
+    if (nextBtn) nextBtn.addEventListener("click", () => shiftDays(1));
+});

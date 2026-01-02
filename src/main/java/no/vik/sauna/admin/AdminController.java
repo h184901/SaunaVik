@@ -13,7 +13,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.util.List;
@@ -60,13 +59,20 @@ public class AdminController {
     }
 
     @GetMapping("/admin")
-    public String admin(@RequestParam(required = false) String key, Model model) {
+    public String admin(@RequestParam(required = false) String key,
+                        @RequestParam(required = false) String date,
+                        Model model) {
+
         requireKey(key);
 
-        model.addAttribute("key", key);
-        model.addAttribute("today", LocalDate.now(OSLO).toString()); // <-- NYTT
+        LocalDate selected = parseDateOrToday(date);
 
-        List<Booking> bookings = service.getAllBookings();
+        model.addAttribute("key", key);
+        model.addAttribute("today", LocalDate.now(OSLO).toString());
+        model.addAttribute("date", selected.toString());
+
+        // NYTT: Bookingar for vald dato
+        List<Booking> bookings = service.getBookingsForDate(selected);
         model.addAttribute("bookings", bookings);
 
         List<Closure> closures = closureRepo.findAllByOrderByDateAscStartTimeAsc();
@@ -77,10 +83,14 @@ public class AdminController {
 
     @PostMapping("/admin/delete")
     public String delete(@RequestParam Long id,
-                         @RequestParam(required = false) String key) {
+                         @RequestParam(required = false) String key,
+                         @RequestParam(required = false) String date) {
         requireKey(key);
         service.deleteBooking(id);
-        return redirectAdminWithKey(key);
+
+        String safeKey = URLEncoder.encode(key, StandardCharsets.UTF_8);
+        String safeDate = (date == null ? "" : URLEncoder.encode(date, StandardCharsets.UTF_8));
+        return "redirect:/admin?key=" + safeKey + (safeDate.isBlank() ? "" : "&date=" + safeDate);
     }
 
     @PostMapping("/admin/close")
@@ -104,10 +114,10 @@ public class AdminController {
             return redirectAdminWithKey(key);
         }
 
-        // Vilkårleg tid -> snap til nærmaste gyldige starttid (90-min intervall)
+        // Vilkårleg tid -> snap til nærmaste gyldige starttid
         try {
-            LocalTime input = LocalTime.parse(time);
-            LocalTime normalized = service.normalizeStartTime(input);
+            var input = java.time.LocalTime.parse(time);
+            var normalized = service.normalizeStartTime(input);
 
             if (!closureRepo.existsByDateAndStartTime(d, normalized)) {
                 closureRepo.save(new Closure(d, normalized));
@@ -123,5 +133,14 @@ public class AdminController {
         requireKey(key);
         closureRepo.deleteById(id);
         return redirectAdminWithKey(key);
+    }
+
+    private LocalDate parseDateOrToday(String date) {
+        if (date == null || date.isBlank()) return LocalDate.now(OSLO);
+        try {
+            return LocalDate.parse(date);
+        } catch (DateTimeParseException e) {
+            return LocalDate.now(OSLO);
+        }
     }
 }
