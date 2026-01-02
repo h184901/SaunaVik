@@ -97,7 +97,7 @@
 
         <div>
             <div class="footer-title">Kontakt</div>
-            <div class="muted">Telefon: <span class="muted">—</span></div>
+            <div class="muted">Telefon:<span class="muted">481 27 855</span></div>
             <div class="muted">E-post: <span class="muted">—</span></div>
         </div>
 

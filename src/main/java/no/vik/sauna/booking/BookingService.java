@@ -27,7 +27,7 @@ public class BookingService {
     // 90 min per økt
     private static final int DURATION_MINUTES = 90;
 
-    private static final int CAPACITY = 4;
+    private static final int CAPACITY = 6;
 
     public BookingService(BookingRepository repo, ClosureRepository closures) {
         this.repo = repo;

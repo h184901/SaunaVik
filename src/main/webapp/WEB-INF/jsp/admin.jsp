@@ -54,7 +54,7 @@
                 <button type="submit" class="btn btn-ghost">Vis</button>
             </form>
 
-            <p class="muted" style="margin:10px 0 0;">Tips: bruk pilene for å bla dag for dag.</p>
+
         </div>
 
         <!-- Steng tid -->
