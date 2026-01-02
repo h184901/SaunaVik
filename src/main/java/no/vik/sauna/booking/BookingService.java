@@ -5,7 +5,7 @@ import no.vik.sauna.common.TimeSlot;
 import no.vik.sauna.common.ValidationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import no.vik.sauna.common.TelegramNotifier;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -17,7 +17,7 @@ public class BookingService {
 
     private final BookingRepository repo;
     private final ClosureRepository closures;
-
+    private final TelegramNotifier telegram;
     private static final ZoneId OSLO = ZoneId.of("Europe/Oslo");
 
     // Åpningstider
@@ -29,9 +29,10 @@ public class BookingService {
 
     private static final int CAPACITY = 6;
 
-    public BookingService(BookingRepository repo, ClosureRepository closures) {
+    public BookingService(BookingRepository repo, ClosureRepository closures, TelegramNotifier telegram) {
         this.repo = repo;
         this.closures = closures;
+        this.telegram = telegram;
     }
 
     private LocalDate today() {
@@ -129,7 +130,10 @@ public class BookingService {
         if (peopleCount > available) throw new ValidationException("Det er berre " + available + " plass(ar) igjen på denne økta.");
 
         Booking booking = new Booking(date, startTime, name.trim(), phone.trim(), peopleCount);
-        return repo.save(booking);
+        Booking saved = repo.save(booking);
+
+        telegram.notifyNewBooking(saved);
+        return saved;
     }
 
     public void deleteBooking(Long id) {
