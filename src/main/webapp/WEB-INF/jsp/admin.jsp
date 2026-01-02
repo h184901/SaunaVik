@@ -7,7 +7,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Admin</title>
     <link rel="stylesheet" href="/styles.css">
-    <script defer src="/app.js"></script>
+
+    <!-- Cache-bust app.js i prod -->
+    <script defer src="/app.js?v=<%= System.currentTimeMillis() %>"></script>
 </head>
 <body>
 
@@ -28,34 +30,31 @@
 
         <div class="card">
             <h1 style="margin-top:0;">Admin</h1>
-            <p class="muted" style="margin:6px 0 0;">Oversikt over alle bookinger + stenging av tider.</p>
+            <p class="muted" style="margin:6px 0 0;">Oversikt over bookinger + stenging av tider.</p>
         </div>
 
-        <!-- Dato-navigasjon (admin) -->
+        <!-- Dato-navigasjon -->
         <div class="card" style="margin-top:16px;">
             <h2 style="margin-top:0;">Vis dato</h2>
 
-            <form id="adminDateForm" method="get" action="/admin" style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
+            <form id="adminDateForm" method="get" action="/admin"
+                  style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
                 <input type="hidden" name="key" value="${key}">
 
                 <button id="adminPrevDayBtn" type="button" class="btn btn-secondary">←</button>
 
                 <div>
                     <label class="muted" style="display:block; font-size:12px; margin-bottom:6px;">Dato</label>
-                    <!-- value kan komme frå request-param i controller seinare; no bruker vi today som fallback -->
                     <input id="adminDateInput" class="input" type="date" name="date"
                            value="${not empty param.date ? param.date : today}">
                 </div>
 
                 <button id="adminNextDayBtn" type="button" class="btn btn-secondary">→</button>
 
-                <!-- fallback -->
                 <button type="submit" class="btn btn-ghost">Vis</button>
             </form>
 
-            <p class="muted" style="margin:10px 0 0;">
-                Tips: bruk pilene for å bla dag for dag.
-            </p>
+            <p class="muted" style="margin:10px 0 0;">Tips: bruk pilene for å bla dag for dag.</p>
         </div>
 
         <!-- Steng tid -->
@@ -65,8 +64,10 @@
                 Velg dato og eventuelt starttid. Tomt klokkeslett = steng heile dagen.
             </p>
 
-            <form method="post" action="/admin/close" style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
+            <form method="post" action="/admin/close"
+                  style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
                 <input type="hidden" name="key" value="${key}">
+                <input type="hidden" name="date" value="${not empty param.date ? param.date : today}">
 
                 <div>
                     <label class="muted" style="display:block; font-size:12px; margin-bottom:6px;">Dato</label>
@@ -86,9 +87,7 @@
         <!-- Stengingar -->
         <div class="card" style="margin-top:16px;">
             <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px;">
-                <div><b>Stengte tider</b>
-                    <span class="muted">• <c:out value="${closures.size()}"/> stk</span>
-                </div>
+                <div><b>Stengte tider</b> <span class="muted">• <c:out value="${closures.size()}"/> stk</span></div>
             </div>
 
             <c:choose>
@@ -135,14 +134,13 @@
             </c:choose>
         </div>
 
-        <!-- Bookinger -->
+        <!-- Bookinger for vald dato (controller din gir bookings for selected date) -->
         <c:choose>
             <c:when test="${empty bookings}">
                 <div class="card" style="margin-top:16px;">
-                    Ingen bookinger enda.
+                    Ingen bookinger for denne datoen.
                 </div>
             </c:when>
-
             <c:otherwise>
                 <div class="card" style="margin-top:16px;">
                     <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px;">
@@ -161,7 +159,6 @@
                                 <th>Handling</th>
                             </tr>
                             </thead>
-
                             <tbody>
                             <c:forEach var="b" items="${bookings}">
                                 <tr>
@@ -174,6 +171,7 @@
                                         <form method="post" action="/admin/delete" style="margin:0;">
                                             <input type="hidden" name="id" value="${b.id}">
                                             <input type="hidden" name="key" value="${key}">
+                                            <input type="hidden" name="date" value="${not empty param.date ? param.date : today}">
                                             <button type="submit" class="btn btn-danger">Slett</button>
                                         </form>
                                     </td>
@@ -182,7 +180,6 @@
                             </tbody>
                         </table>
                     </div>
-
                 </div>
             </c:otherwise>
         </c:choose>

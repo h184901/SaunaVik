@@ -7,7 +7,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Booking</title>
     <link rel="stylesheet" href="/styles.css">
-    <script defer src="/app.js"></script>
+
+    <!-- Cache-bust app.js i prod -->
+    <script defer src="/app.js?v=<%= System.currentTimeMillis() %>"></script>
 </head>
 <body>
 
@@ -32,7 +34,6 @@
                 Velg dato og reserver ei ledig økt (90 min).
             </p>
 
-            <!-- Viktig: id-ar må matche app.js -->
             <form id="dateForm" method="get" action="/booking" class="form-row" style="margin-top:14px; align-items:end;">
                 <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:end; width:100%;">
                     <button id="prevDayBtn" type="button" class="btn btn-secondary">←</button>
@@ -44,7 +45,6 @@
 
                     <button id="nextDayBtn" type="button" class="btn btn-secondary">→</button>
 
-                    <!-- Fallback om JS er av -->
                     <button type="submit" class="btn btn-ghost" style="white-space:nowrap;">Vis tider</button>
                 </div>
             </form>
