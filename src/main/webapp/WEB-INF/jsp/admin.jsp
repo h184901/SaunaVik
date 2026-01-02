@@ -31,7 +31,34 @@
             <p class="muted" style="margin:6px 0 0;">Oversikt over alle bookinger + stenging av tider.</p>
         </div>
 
-        <!-- Steng tider -->
+        <!-- Dato-navigasjon (admin) -->
+        <div class="card" style="margin-top:16px;">
+            <h2 style="margin-top:0;">Vis dato</h2>
+
+            <form id="adminDateForm" method="get" action="/admin" style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
+                <input type="hidden" name="key" value="${key}">
+
+                <button id="adminPrevDayBtn" type="button" class="btn btn-secondary">←</button>
+
+                <div>
+                    <label class="muted" style="display:block; font-size:12px; margin-bottom:6px;">Dato</label>
+                    <!-- value kan komme frå request-param i controller seinare; no bruker vi today som fallback -->
+                    <input id="adminDateInput" class="input" type="date" name="date"
+                           value="${not empty param.date ? param.date : today}">
+                </div>
+
+                <button id="adminNextDayBtn" type="button" class="btn btn-secondary">→</button>
+
+                <!-- fallback -->
+                <button type="submit" class="btn btn-ghost">Vis</button>
+            </form>
+
+            <p class="muted" style="margin:10px 0 0;">
+                Tips: bruk pilene for å bla dag for dag.
+            </p>
+        </div>
+
+        <!-- Steng tid -->
         <div class="card" style="margin-top:16px;">
             <h2 style="margin-top:0;">Steng tid</h2>
             <p class="muted" style="margin:6px 0 12px;">
@@ -43,21 +70,8 @@
 
                 <div>
                     <label class="muted" style="display:block; font-size:12px; margin-bottom:6px;">Dato</label>
-
-                    <!-- NY: pilar for dato (ikkje auto-submit, du trykker Steng sjølv) -->
-                    <div style="display:flex; gap:10px; align-items:center;">
-                        <button id="adminPrevDayBtn" type="button" class="btn btn-secondary">←</button>
-
-                        <input id="adminDateInput"
-                               class="input"
-                               type="date"
-                               name="date"
-                               required
-                               value="${today}"
-                               style="min-width: 180px;">
-
-                        <button id="adminNextDayBtn" type="button" class="btn btn-secondary">→</button>
-                    </div>
+                    <input class="input" type="date" name="date" required
+                           value="${not empty param.date ? param.date : today}">
                 </div>
 
                 <div>
@@ -69,7 +83,7 @@
             </form>
         </div>
 
-        <!-- Liste over stengingar -->
+        <!-- Stengingar -->
         <div class="card" style="margin-top:16px;">
             <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px;">
                 <div><b>Stengte tider</b>

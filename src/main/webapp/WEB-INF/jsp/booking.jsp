@@ -32,26 +32,21 @@
                 Velg dato og reserver ei ledig økt (90 min).
             </p>
 
-            <!-- NY: Dato + pilar, auto-submit (ingen "Vis tider"-knapp) -->
-            <form id="dateForm" method="get" action="/booking" class="form-row" style="margin-top:14px;">
-                <label style="width:100%;">
-                    Dato
-                    <div style="display:flex; gap:10px; align-items:center; margin-top:6px; flex-wrap:wrap;">
-                        <button id="prevDayBtn" type="button" class="btn btn-secondary">←</button>
+            <!-- Viktig: id-ar må matche app.js -->
+            <form id="dateForm" method="get" action="/booking" class="form-row" style="margin-top:14px; align-items:end;">
+                <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:end; width:100%;">
+                    <button id="prevDayBtn" type="button" class="btn btn-secondary">←</button>
 
-                        <input id="dateInput"
-                               type="date"
-                               name="date"
-                               value="${date}"
-                               min="${today}"
-                               required
-                               style="flex:1; min-width: 220px;">
+                    <label style="flex:1; min-width:220px;">
+                        Dato
+                        <input id="dateInput" type="date" name="date" value="${date}" required>
+                    </label>
 
-                        <button id="nextDayBtn" type="button" class="btn btn-secondary">→</button>
-                    </div>
+                    <button id="nextDayBtn" type="button" class="btn btn-secondary">→</button>
 
-                   
-                </label>
+                    <!-- Fallback om JS er av -->
+                    <button type="submit" class="btn btn-ghost" style="white-space:nowrap;">Vis tider</button>
+                </div>
             </form>
 
             <c:if test="${not empty error}">

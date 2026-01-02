@@ -14,34 +14,16 @@ function clamp(value, min, max) {
     return value;
 }
 
-/* ISO date helpers (unngå timezone-krøll) */
-function parseISODate(iso) {
-    // iso: "yyyy-MM-dd"
-    const [y, m, d] = iso.split("-").map(Number);
-    return new Date(y, m - 1, d); // lokal midnatt
+function pad2(n) {
+    return String(n).padStart(2, "0");
 }
 
-function formatISODate(dt) {
-    const pad = (n) => String(n).padStart(2, "0");
-    return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
-}
-
-function addDaysISO(iso, delta) {
-    const dt = parseISODate(iso);
-    dt.setDate(dt.getDate() + delta);
-    return formatISODate(dt);
-}
-
-function clampToMinISO(inputEl, iso) {
-    const min = inputEl.min; // "yyyy-MM-dd" eller tom
-    if (!min) return iso;
-    return (iso < min) ? min : iso;
+function toYmd(d) {
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
 
 /* =========================
    Booking: peopleCount (mobilvennlig)
-   - Tillat fri typing
-   - Clamp på blur + submit
 ========================= */
 function getMinMax(input) {
     const min = parseInt(input.min || "1", 10);
@@ -51,25 +33,20 @@ function getMinMax(input) {
 
 function clampPeopleCountOnBlurOrSubmit(input) {
     const { min, max } = getMinMax(input);
-
     const v = toIntOrNull(input.value);
     const fixed = v === null ? min : clamp(v, min, max);
-
     input.value = String(fixed);
 }
 
-// INPUT: ikkje clamp aggressivt
 document.addEventListener("input", (e) => {
     const el = e.target;
 
-    // phone: bare siffer, maks 8
     if (el instanceof HTMLInputElement && el.name === "phone") {
         const digits = el.value.replace(/\D/g, "").slice(0, 8);
         if (digits !== el.value) el.value = digits;
     }
 });
 
-// BLUR: clamp når du går ut
 document.addEventListener(
     "blur",
     (e) => {
@@ -86,7 +63,6 @@ document.addEventListener(
     true
 );
 
-// SUBMIT: clamp før request
 document.addEventListener("submit", (e) => {
     const form = e.target;
     if (!(form instanceof HTMLFormElement)) return;
@@ -141,51 +117,88 @@ document.addEventListener("submit", (e) => {
 })();
 
 /* =========================
-   Date navigation
-   - Booking: auto-submit
-   - Admin (steng tid): ikkje auto-submit
+   Date navigation (booking + admin)
 ========================= */
-document.addEventListener("DOMContentLoaded", () => {
-    // BOOKING
-    const bookingForm = document.getElementById("dateForm");
-    const bookingDateInput = document.getElementById("dateInput");
-    const bookingPrevBtn = document.getElementById("prevDayBtn");
-    const bookingNextBtn = document.getElementById("nextDayBtn");
+function wireDateNav(opts) {
+    const {
+        formId,
+        inputId,
+        prevBtnId,
+        nextBtnId,
+        minToday = false,   // true for booking, false for admin (admin kan bla bakover om du vil)
+        autoSubmit = true
+    } = opts;
 
-    if (bookingForm && bookingDateInput) {
-        // Auto-submit når dato velges manuelt
-        bookingDateInput.addEventListener("change", () => {
-            if (bookingDateInput.value) bookingForm.submit();
+    const dateInput = document.getElementById(inputId);
+    if (!(dateInput instanceof HTMLInputElement)) return;
+
+    // Finn form robust
+    let form = document.getElementById(formId);
+    if (!(form instanceof HTMLFormElement)) {
+        const maybeForm = dateInput.closest("form");
+        if (maybeForm instanceof HTMLFormElement) form = maybeForm;
+    }
+    if (!(form instanceof HTMLFormElement)) return;
+
+    const prevBtn = document.getElementById(prevBtnId);
+    const nextBtn = document.getElementById(nextBtnId);
+
+    const today = new Date();
+    const todayStr = toYmd(today);
+
+    if (minToday) {
+        dateInput.min = todayStr;
+        if (!dateInput.value || dateInput.value < todayStr) {
+            dateInput.value = todayStr;
+        }
+    } else {
+        // admin: om tomt, set til i dag for å ha noko å bla frå
+        if (!dateInput.value) dateInput.value = todayStr;
+    }
+
+    if (autoSubmit) {
+        dateInput.addEventListener("change", () => {
+            if (dateInput.value) form.submit();
         });
-
-        const shiftBooking = (delta) => {
-            if (!bookingDateInput.value) return;
-
-            let newVal = addDaysISO(bookingDateInput.value, delta);
-            newVal = clampToMinISO(bookingDateInput, newVal);
-
-            bookingDateInput.value = newVal;
-            bookingForm.submit();
-        };
-
-        if (bookingPrevBtn) bookingPrevBtn.addEventListener("click", () => shiftBooking(-1));
-        if (bookingNextBtn) bookingNextBtn.addEventListener("click", () => shiftBooking(1));
     }
 
-    // ADMIN (steng tid) — berre endre dato, ikkje submit
-    const adminDateInput = document.getElementById("adminDateInput");
-    const adminPrevBtn = document.getElementById("adminPrevDayBtn");
-    const adminNextBtn = document.getElementById("adminNextDayBtn");
+    const shiftDays = (delta) => {
+        // Om tomt: start frå i dag
+        const baseStr = dateInput.value || todayStr;
 
-    if (adminDateInput) {
-        const shiftAdmin = (delta) => {
-            if (!adminDateInput.value) return;
+        const d = new Date(baseStr + "T00:00:00");
+        d.setDate(d.getDate() + delta);
 
-            const newVal = addDaysISO(adminDateInput.value, delta);
-            adminDateInput.value = newVal;
-        };
+        const newStr = toYmd(d);
 
-        if (adminPrevBtn) adminPrevBtn.addEventListener("click", () => shiftAdmin(-1));
-        if (adminNextBtn) adminNextBtn.addEventListener("click", () => shiftAdmin(1));
-    }
+        if (minToday && newStr < todayStr) return;
+
+        dateInput.value = newStr;
+        form.submit();
+    };
+
+    if (prevBtn instanceof HTMLButtonElement) prevBtn.addEventListener("click", () => shiftDays(-1));
+    if (nextBtn instanceof HTMLButtonElement) nextBtn.addEventListener("click", () => shiftDays(1));
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    // Booking
+    wireDateNav({
+        formId: "dateForm",
+        inputId: "dateInput",
+        prevBtnId: "prevDayBtn",
+        nextBtnId: "nextDayBtn",
+        minToday: true,
+        autoSubmit: true
+    });
+
+    // Admin
+    wireDateNav({
+        formId: "adminDateForm",
+        inputId: "adminDateInput",
+        prevBtnId: "adminPrevDayBtn",
+        nextBtnId: "adminNextDayBtn",
+        minToday: false,
+        autoSubmit: true
+    });
 });
