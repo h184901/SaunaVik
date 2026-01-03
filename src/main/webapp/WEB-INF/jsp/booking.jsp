@@ -61,6 +61,7 @@
 
             <c:forEach var="slot" items="${slots}">
                 <c:set var="closed" value="${slot.capacity == 0}" />
+                <c:set var="expired" value="${slot.expired}" />
 
                 <div class="slot ${closed ? 'closed' :''}">
                     <div class="slot-left">
@@ -73,10 +74,14 @@
                                 <span class="badge closed">Stengt</span>
                             </c:when>
 
+                            <c:when test="${expired}">
+                                <span class="badge no">Passert</span>
+                            </c:when>
+
                             <c:when test="${slot.available}">
-                                <span class="badge ok">
-                                    Ledig • ${slot.availableSpots} av ${slot.capacity} igjen
-                                </span>
+        <span class="badge ok">
+            Ledig • ${slot.availableSpots} av ${slot.capacity} igjen
+        </span>
                             </c:when>
 
                             <c:otherwise>
@@ -89,6 +94,10 @@
                         <c:choose>
                             <c:when test="${closed}">
                                 <p class="muted" style="margin:0;">Stengt</p>
+                            </c:when>
+
+                            <c:when test="${expired}">
+                                <p class="muted" style="margin:0;">Passert</p>
                             </c:when>
 
                             <c:when test="${slot.available}">

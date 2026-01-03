@@ -12,13 +12,23 @@ public class TimeSlot {
     private final int booked;
     private final int availableSpots;
 
+    // NYTT:
+    private final boolean expired;
+
+    // Bakoverkompatibel konstruktør (expired=false)
     public TimeSlot(LocalDate date, LocalTime startTime, int durationMinutes, int capacity, int booked) {
+        this(date, startTime, durationMinutes, capacity, booked, false);
+    }
+
+
+    public TimeSlot(LocalDate date, LocalTime startTime, int durationMinutes, int capacity, int booked, boolean expired) {
         this.date = date;
         this.startTime = startTime;
         this.durationMinutes = durationMinutes;
         this.capacity = capacity;
         this.booked = booked;
         this.availableSpots = Math.max(0, capacity - booked);
+        this.expired = expired;
     }
 
     public LocalDate getDate() { return date; }
@@ -33,5 +43,10 @@ public class TimeSlot {
     public int getBooked() { return booked; }
     public int getAvailableSpots() { return availableSpots; }
 
-    public boolean isAvailable() { return availableSpots > 0; }
+    // NYTT:
+    public boolean isExpired() { return expired; }
+
+    public boolean isAvailable() {
+        return !expired && availableSpots > 0;
+    }
 }

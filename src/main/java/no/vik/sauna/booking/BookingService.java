@@ -5,7 +5,7 @@ import no.vik.sauna.common.TimeSlot;
 import no.vik.sauna.common.ValidationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import no.vik.sauna.common.TelegramNotifier;
+
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -17,7 +17,7 @@ public class BookingService {
 
     private final BookingRepository repo;
     private final ClosureRepository closures;
-    private final TelegramNotifier telegram;
+
     private static final ZoneId OSLO = ZoneId.of("Europe/Oslo");
 
     // Åpningstider
@@ -29,10 +29,9 @@ public class BookingService {
 
     private static final int CAPACITY = 6;
 
-    public BookingService(BookingRepository repo, ClosureRepository closures, TelegramNotifier telegram) {
+    public BookingService(BookingRepository repo, ClosureRepository closures) {
         this.repo = repo;
         this.closures = closures;
-        this.telegram = telegram;
     }
 
     private LocalDate today() {
@@ -83,12 +82,18 @@ public class BookingService {
         return candidate;
     }
 
-    // NYTT: admin skal kunne henta bookinger for ein bestemt dato
+    // Admin: bookinger for ein bestemt dato
     public List<Booking> getBookingsForDate(LocalDate date) {
         if (date == null) date = today();
         return repo.findAllByDateOrderByStartTimeAsc(date);
     }
 
+    /**
+     * Viktig endring:
+     * - Ei økt skal berre vere "for seint" når ho er FERDIG (now >= endTime),
+     *   ikkje når ho har STARTA.
+     * - "Stengt" blir berre brukt når admin har stengt (Closure), ikkje for fortid.
+     */
     public List<TimeSlot> getSlotsFor(LocalDate date) {
         if (date == null) date = today();
 
@@ -98,24 +103,34 @@ public class BookingService {
         LocalTime now = LocalTime.now(OSLO);
 
         List<TimeSlot> slots = new ArrayList<>();
-        for (LocalTime t : getAllowedStartTimes()) {
+        for (LocalTime start : getAllowedStartTimes()) {
 
-            // Steng tider som har passert i dag
-            boolean pastTimeToday = date.equals(today) && t.isBefore(now);
+            LocalTime end = start.plusMinutes(DURATION_MINUTES);
 
-            boolean slotClosed =
-                    pastTimeToday ||
-                            wholeDayClosed ||
-                            closures.existsByDateAndStartTime(date, t);
+            boolean expired =
+                    date.equals(today) && !now.isBefore(end); // now >= end
 
-            if (slotClosed) {
-                slots.add(new TimeSlot(date, t, DURATION_MINUTES, 0, 0));
+            boolean closedByAdmin =
+                    wholeDayClosed ||
+                            closures.existsByDateAndStartTime(date, start);
+
+            if (closedByAdmin) {
+                // ekte stengt
+                slots.add(new TimeSlot(date, start, DURATION_MINUTES, 0, 0, false));
                 continue;
             }
 
-            int booked = repo.sumPeopleCountByDateAndStartTime(date, t);
-            slots.add(new TimeSlot(date, t, DURATION_MINUTES, CAPACITY, booked));
+            if (expired) {
+                // passert (ikkje stengt)
+                // capacity/booked kan vere kva som helst her, men gjer den "u-bookbar"
+                slots.add(new TimeSlot(date, start, DURATION_MINUTES, getCapacity(), getCapacity(), true));
+                continue;
+            }
+
+            int booked = repo.sumPeopleCountByDateAndStartTime(date, start);
+            slots.add(new TimeSlot(date, start, DURATION_MINUTES, CAPACITY, booked, false));
         }
+
         return slots;
     }
 
@@ -130,10 +145,7 @@ public class BookingService {
         if (peopleCount > available) throw new ValidationException("Det er berre " + available + " plass(ar) igjen på denne økta.");
 
         Booking booking = new Booking(date, startTime, name.trim(), phone.trim(), peopleCount);
-        Booking saved = repo.save(booking);
-
-        telegram.notifyNewBooking(saved);
-        return saved;
+        return repo.save(booking);
     }
 
     public void deleteBooking(Long id) {
@@ -161,11 +173,13 @@ public class BookingService {
             throw new ValidationException("Ugyldig tidspunkt. Velg ein tid innanfor opningstid.");
         }
 
-        // Ikkje mulig å booke i fortid same dag
+        // Endring: Ikkje blokkér fordi startTime < now.
+        // Blokkér berre viss økta er FERDIG (now >= end).
         if (date.equals(today)) {
             LocalTime now = LocalTime.now(OSLO);
-            if (startTime.isBefore(now)) {
-                throw new ValidationException("Du kan ikkje booke ei tid som allereie har passert i dag.");
+            LocalTime end = startTime.plusMinutes(DURATION_MINUTES);
+            if (!now.isBefore(end)) { // now >= end
+                throw new ValidationException("Du kan ikkje booke ei økt som allereie er ferdig.");
             }
         }
 
