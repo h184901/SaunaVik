@@ -1,6 +1,7 @@
 package no.vik.sauna.booking;
 
 import no.vik.sauna.admin.ClosureRepository;
+import no.vik.sauna.common.TelegramNotifier;
 import no.vik.sauna.common.TimeSlot;
 import no.vik.sauna.common.ValidationException;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ public class BookingService {
 
     private final BookingRepository repo;
     private final ClosureRepository closures;
+    private final TelegramNotifier telegram; // <-- tilbake
 
     private static final ZoneId OSLO = ZoneId.of("Europe/Oslo");
 
@@ -29,9 +31,10 @@ public class BookingService {
 
     private static final int CAPACITY = 6;
 
-    public BookingService(BookingRepository repo, ClosureRepository closures) {
+    public BookingService(BookingRepository repo, ClosureRepository closures, TelegramNotifier telegram) {
         this.repo = repo;
         this.closures = closures;
+        this.telegram = telegram;
     }
 
     private LocalDate today() {
@@ -107,8 +110,7 @@ public class BookingService {
 
             LocalTime end = start.plusMinutes(DURATION_MINUTES);
 
-            boolean expired =
-                    date.equals(today) && !now.isBefore(end); // now >= end
+            boolean expired = date.equals(today) && !now.isBefore(end); // now >= end
 
             boolean closedByAdmin =
                     wholeDayClosed ||
@@ -122,7 +124,7 @@ public class BookingService {
 
             if (expired) {
                 // passert (ikkje stengt)
-                // capacity/booked kan vere kva som helst her, men gjer den "u-bookbar"
+                // gjer den u-bookbar ved å fylle opp
                 slots.add(new TimeSlot(date, start, DURATION_MINUTES, getCapacity(), getCapacity(), true));
                 continue;
             }
@@ -145,7 +147,14 @@ public class BookingService {
         if (peopleCount > available) throw new ValidationException("Det er berre " + available + " plass(ar) igjen på denne økta.");
 
         Booking booking = new Booking(date, startTime, name.trim(), phone.trim(), peopleCount);
-        return repo.save(booking);
+        Booking saved = repo.save(booking);
+
+        // Telegram: etter save, og aldri la telegram-feil stoppe booking
+        try {
+            telegram.notifyNewBooking(saved);
+        } catch (Exception ignored) { }
+
+        return saved;
     }
 
     public void deleteBooking(Long id) {
@@ -173,7 +182,6 @@ public class BookingService {
             throw new ValidationException("Ugyldig tidspunkt. Velg ein tid innanfor opningstid.");
         }
 
-        // Endring: Ikkje blokkér fordi startTime < now.
         // Blokkér berre viss økta er FERDIG (now >= end).
         if (date.equals(today)) {
             LocalTime now = LocalTime.now(OSLO);
