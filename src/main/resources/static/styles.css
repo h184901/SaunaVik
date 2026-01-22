@@ -651,3 +651,12 @@ input::placeholder{ color: #9ca3af; }
 @media (max-width: 860px){
     .footer-bottom{ flex-direction:column; }
 }
+.outage-banner {
+    background: #fff3cd;
+    border: 1px solid #f0c36d;
+    color: #664d03;
+    padding: 14px;
+    margin: 16px 0;
+    border-radius: 10px;
+    font-weight: 500;
+}

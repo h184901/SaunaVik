@@ -30,6 +30,12 @@
 </header>
 
 <main>
+    <div class="outage-banner">
+        ⚠️ <strong>Badstova er mellombels ute av drift</strong><br>
+        På grunn av knust på dør er badstova for tida stengd.
+        Håpar å vere igong at veldig snart.
+    </div>
+
 
     <!-- HERO -->
     <section class="hero hero--clean" style="--hero-img: url('/img/Vik.jpg')">
@@ -123,6 +129,7 @@
         <img id="modalImg" alt="">
     </div>
 </div>
+
 
 </body>
 </html>
