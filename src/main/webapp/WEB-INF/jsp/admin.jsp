@@ -8,7 +8,7 @@
     <title>Admin</title>
     <link rel="stylesheet" href="/styles.css">
 
-    <!-- Cache-bust app.js i prod -->
+    <!-- cache-bust -->
     <script defer src="/app.js?v=<%= System.currentTimeMillis() %>"></script>
 </head>
 <body>
@@ -30,159 +30,155 @@
 
         <div class="card">
             <h1 style="margin-top:0;">Admin</h1>
-            <p class="muted" style="margin:6px 0 0;">Oversikt over bookinger + stenging av tider.</p>
+            <p class="muted" style="margin:6px 0 0;">Oversikt over bookinger og stenging av tider.</p>
         </div>
 
         <!-- Dato-navigasjon -->
         <div class="card" style="margin-top:16px;">
-            <h2 style="margin-top:0;">Vis dato</h2>
+            <h2>Vis dato</h2>
 
             <form id="adminDateForm" method="get" action="/admin"
                   style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
+
                 <input type="hidden" name="key" value="${key}">
 
                 <button id="adminPrevDayBtn" type="button" class="btn btn-secondary">←</button>
 
                 <div>
-                    <label class="muted" style="display:block; font-size:12px; margin-bottom:6px;">Dato</label>
-                    <input id="adminDateInput" class="input" type="date" name="date"
-                           value="${not empty param.date ? param.date : today}">
+                    <label class="muted" style="font-size:12px;">Dato</label>
+                    <input id="adminDateInput"
+                           class="input"
+                           type="date"
+                           name="date"
+                           value="${date}">
                 </div>
 
                 <button id="adminNextDayBtn" type="button" class="btn btn-secondary">→</button>
 
                 <button type="submit" class="btn btn-ghost">Vis</button>
             </form>
-
-
         </div>
 
-        <!-- Steng tid -->
+        <!-- STENG TID -->
         <div class="card" style="margin-top:16px;">
-            <h2 style="margin-top:0;">Steng tid</h2>
-            <p class="muted" style="margin:6px 0 12px;">
-                Velg dato og eventuelt starttid. Tomt klokkeslett = steng heile dagen.
+            <h2>Steng tid</h2>
+            <p class="muted">
+                Velg dato. Klokkeslett valfritt. Tomt klokkeslett = steng heile dagen.
             </p>
 
             <form method="post" action="/admin/close"
                   style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
+
                 <input type="hidden" name="key" value="${key}">
-                <input type="hidden" name="date" value="${not empty param.date ? param.date : today}">
 
                 <div>
-                    <label class="muted" style="display:block; font-size:12px; margin-bottom:6px;">Dato</label>
-                    <input class="input" type="date" name="date" required
-                           value="${not empty param.date ? param.date : today}">
+                    <label class="muted" style="font-size:12px;">Dato</label>
+                    <input class="input"
+                           type="date"
+                           name="date"
+                           required
+                           value="${date}">
                 </div>
 
                 <div>
-                    <label class="muted" style="display:block; font-size:12px; margin-bottom:6px;">Klokkeslett (valfritt)</label>
-                    <input class="input" type="time" name="time" placeholder="08:23">
+                    <label class="muted" style="font-size:12px;">Klokkeslett (valfritt)</label>
+                    <input class="input"
+                           type="time"
+                           name="time"
+                           placeholder="08:23">
                 </div>
 
                 <button type="submit" class="btn btn-danger">Steng</button>
             </form>
         </div>
 
-        <!-- Stengingar -->
+        <!-- STENGTE TIDER -->
         <div class="card" style="margin-top:16px;">
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px;">
-                <div><b>Stengte tider</b> <span class="muted">• <c:out value="${closures.size()}"/> stk</span></div>
-            </div>
+            <h2>Stengte tider</h2>
 
             <c:choose>
                 <c:when test="${empty closures}">
-                    <div class="muted">Ingen stengingar.</div>
+                    <p class="muted">Ingen stengingar.</p>
                 </c:when>
                 <c:otherwise>
-                    <div class="admin-table-wrap">
-                        <table class="admin-table">
-                            <thead>
+                    <table class="admin-table">
+                        <thead>
+                        <tr>
+                            <th>Dato</th>
+                            <th>Tid</th>
+                            <th></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <c:forEach var="c1" items="${closures}">
                             <tr>
-                                <th>Dato</th>
-                                <th>Tid</th>
-                                <th>Handling</th>
+                                <td>${c1.date}</td>
+                                <td>
+                                    <c:choose>
+                                        <c:when test="${empty c1.startTime}">
+                                            <b>Heile dagen</b>
+                                        </c:when>
+                                        <c:otherwise>
+                                            ${c1.startTime}
+                                        </c:otherwise>
+                                    </c:choose>
+                                </td>
+                                <td>
+                                    <form method="post" action="/admin/open">
+                                        <input type="hidden" name="id" value="${c1.id}">
+                                        <input type="hidden" name="key" value="${key}">
+                                        <button class="btn">Opne</button>
+                                    </form>
+                                </td>
                             </tr>
-                            </thead>
-                            <tbody>
-                            <c:forEach var="c1" items="${closures}">
-                                <tr>
-                                    <td>${c1.date}</td>
-                                    <td>
-                                        <c:choose>
-                                            <c:when test="${empty c1.startTime}">
-                                                <b>Heile dagen</b>
-                                            </c:when>
-                                            <c:otherwise>
-                                                <b>${c1.startTime}</b>
-                                            </c:otherwise>
-                                        </c:choose>
-                                    </td>
-                                    <td>
-                                        <form method="post" action="/admin/open" style="margin:0;">
-                                            <input type="hidden" name="id" value="${c1.id}">
-                                            <input type="hidden" name="key" value="${key}">
-                                            <button type="submit" class="btn">Opne</button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            </c:forEach>
-                            </tbody>
-                        </table>
-                    </div>
+                        </c:forEach>
+                        </tbody>
+                    </table>
                 </c:otherwise>
             </c:choose>
         </div>
 
-        <!-- Bookinger for vald dato (controller din gir bookings for selected date) -->
-        <c:choose>
-            <c:when test="${empty bookings}">
-                <div class="card" style="margin-top:16px;">
-                    Ingen bookinger for denne datoen.
-                </div>
-            </c:when>
-            <c:otherwise>
-                <div class="card" style="margin-top:16px;">
-                    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px;">
-                        <div><b>Bookinger</b> <span class="muted">• ${bookings.size()} stk</span></div>
-                    </div>
+        <!-- BOOKINGER -->
+        <div class="card" style="margin-top:16px;">
+            <h2>Bookinger for ${date}</h2>
 
-                    <div class="admin-table-wrap">
-                        <table class="admin-table">
-                            <thead>
+            <c:choose>
+                <c:when test="${empty bookings}">
+                    <p class="muted">Ingen bookinger.</p>
+                </c:when>
+                <c:otherwise>
+                    <table class="admin-table">
+                        <thead>
+                        <tr>
+                            <th>Tid</th>
+                            <th>Namn</th>
+                            <th>Tlf</th>
+                            <th>Antall</th>
+                            <th></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <c:forEach var="b" items="${bookings}">
                             <tr>
-                                <th>Dato</th>
-                                <th>Tid</th>
-                                <th>Namn</th>
-                                <th>Tlf</th>
-                                <th>Antall</th>
-                                <th>Handling</th>
+                                <td>${b.startTime}</td>
+                                <td>${b.name}</td>
+                                <td>${b.phone}</td>
+                                <td>${b.peopleCount}</td>
+                                <td>
+                                    <form method="post" action="/admin/delete">
+                                        <input type="hidden" name="id" value="${b.id}">
+                                        <input type="hidden" name="key" value="${key}">
+                                        <input type="hidden" name="date" value="${date}">
+                                        <button class="btn btn-danger">Slett</button>
+                                    </form>
+                                </td>
                             </tr>
-                            </thead>
-                            <tbody>
-                            <c:forEach var="b" items="${bookings}">
-                                <tr>
-                                    <td>${b.date}</td>
-                                    <td><b>${b.startTime}</b></td>
-                                    <td>${b.name}</td>
-                                    <td>${b.phone}</td>
-                                    <td>${b.peopleCount}</td>
-                                    <td>
-                                        <form method="post" action="/admin/delete" style="margin:0;">
-                                            <input type="hidden" name="id" value="${b.id}">
-                                            <input type="hidden" name="key" value="${key}">
-                                            <input type="hidden" name="date" value="${not empty param.date ? param.date : today}">
-                                            <button type="submit" class="btn btn-danger">Slett</button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            </c:forEach>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </c:otherwise>
-        </c:choose>
+                        </c:forEach>
+                        </tbody>
+                    </table>
+                </c:otherwise>
+            </c:choose>
+        </div>
 
     </div>
 </main>
