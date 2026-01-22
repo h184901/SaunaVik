@@ -1,0 +1,48 @@
+# Sauna i Vik – bookingsystem
+
+Dette er ei enkel bookingside for badstove i Vik.
+Nettsida blir brukt i praksis av kundar og eigar, og blir justert etter behov og tilbakemeldingar.
+
+Nettside: https://vikjasauna.no
+
+---
+
+## Kva kan løysinga gjere?
+
+### For kundar
+- Velje dato og tidspunkt
+- Sjå kva som er ledig
+- Booke plass på 90-minutts økter
+- Mobilvennleg og enkel å bruke
+
+### For admin
+- Logge inn via admin-side
+- Sjå bookinger per dag
+- Stenge enkeltøkter eller heile dagar
+- Opne tider igjen ved behov
+- Få varsel når nye bookinger kjem inn
+
+---
+
+## Teknologi
+
+- Java
+- Spring Boot
+- JSP
+- JavaScript
+- H2-database
+- Telegram Bot (varsling)
+- Railway (deploy)
+
+Konfigurasjon blir gjort via miljøvariablar.
+
+---
+
+## Litt om løysinga
+
+- Bookinger kan gjerast så lenge økta ikkje er ferdig
+- Kapasitet blir rekna ut dynamisk
+- Admin-stenging overstyrer vanleg booking
+- Varsling er isolert slik at booking alltid fungerer
+
+---
